@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -24,10 +25,12 @@ import { signupSchema, type SignupSchema } from "@/schemas/auth.schema";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthResponse } from "@/types/auth.js";
+import { useState } from "react";
 
 export function SignupForm() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<SignupSchema>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -35,10 +38,13 @@ export function SignupForm() {
       lastname: "",
       email: "",
       password: "",
+      licence: false,
+      licenseNumber: "",
     },
   });
 
   async function onSubmit(data: SignupSchema) {
+    setIsLoading(true);
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
       credentials: "include",
@@ -56,6 +62,7 @@ export function SignupForm() {
     } else {
       toast.error("Erreur lors de l'inscription");
     }
+    setIsLoading(false);
   }
 
   return (
@@ -131,7 +138,43 @@ export function SignupForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit">S'inscrire</Button>
+            <FormField
+              control={form.control}
+              name="licence"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="licence"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <FormLabel htmlFor="licence">
+                      Je possède ma licence {new Date().getFullYear()}
+                    </FormLabel>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {form.watch("licence") && (
+              <FormField
+                control={form.control}
+                name="licenseNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Numéro de licence</FormLabel>
+                    <FormControl>
+                      <Input placeholder="1234567890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "En cours..." : "S'inscrire"}
+            </Button>
           </form>
         </Form>
       </CardContent>
